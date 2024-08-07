@@ -1,23 +1,19 @@
 use std::fs;
 use std::path::PathBuf;
 
-use clap::Parser;
 use home::home_dir;
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor, Result};
 
 mod db;
 
-/// Relational algebra database management system
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Database file
-    file: Option<PathBuf>,
+fn main() -> Result<()> {
+    let database = db::Database::new();
+    database.greetings();
+    repl(database)
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
+fn repl(database: db::Database) -> Result<()> {
     let mut rl = DefaultEditor::new()?;
 
     let mut home: PathBuf;
@@ -44,22 +40,12 @@ fn main() -> Result<()> {
     }
     */
 
-    println!(
-        "{} version {}\nEnter \".help\" for usage hints.",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-    );
-
-    if args.file.is_none() {
-        println!("Connected to a transient in-memory database.\nUse \".open FILENAME\" to reopen on a persistent database.");
-    }
-
     loop {
         let readline = rl.readline(&format!("{}> ", env!("CARGO_PKG_NAME")).to_string());
         match readline {
             Ok(line) => {
                 let _ = rl.add_history_entry(line.as_str());
-                db::process_cmd(&args, &line);
+                database.process_line(&line);
                 println!("Line: {}", line);
             }
             Err(ReadlineError::Interrupted) => {
